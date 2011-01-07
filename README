@@ -1,0 +1,86 @@
+Ezrss
+=====
+
+This is a very stupid and thin (like 200 LOC w/ comments and all)
+wrapper around the famous TV-show RSS service.
+
+It does not run on ruby 1.8 (oh noes!) since I'm not using it a lot. 1.8 was
+good, but 1.9 is really better, go for it! Also this gem has no tests for now,
+because it's mostly intended as a joke / bored-tonight kind of thing.  If you
+*really* insist I'll add some bacon, alright.
+
+Anyway, HTH.
+
+Dependencies
+------------
+
+  * simple-rss (a very nice 200 LOC piece of gem)
+  * typhoeus <3
+
+How does it work?
+-----------------
+
+Searching always yields a result-set (Ezrss::ResultSet):
+
+  # Search for one show
+  rs = Ezrss.search 'Houze', exact: true
+  # => <Ezrss::ResultSet w/ Houze (1 HTTP query)>
+
+  # Alternatively, you can use Ezrss::Search directly:
+  rs = Ezrss::Search.new('Houze', exact: true).result_set
+  # => <Ezrss::ResultSet w/ Houze (1 HTTP query)>
+
+  # Or search many shows...
+  rs = Ezrss.search %w(Houze SpaceDrama), exact: true
+  # => <Ezrss::ResultSet w/ Houze and SpaceDrama (2 HTTP queries)>
+
+  rs.shows.each { |show| puts "#{show.title} -> #{show.link}" }
+
+Filter a result set:
+--------------------
+
+Filtering results is done via the #where method (also aliased to #pick). The
+method takes either one or two parameters. The first form applies a filtering
+to every show in the search results, while the latter is limited to the
+specified show name (or rather searched-show name). See the following examples:
+
+  rs = Ezrss.search %w(SexyVampires ERShow), exact: true
+
+  # This filter would only apply to results for "SexyVampires"...
+  rs.where 'SexyVampires', title: /lulz/, description: /Season: 42/
+
+  # This filter would apply to *both* search queries
+  rs.where title: /chunky|bacon/
+
+  # #pick is an alias for #where
+  rs.pick title: /chunky|bacon/
+
+If you like ruby, you probably like blocks too, there, have a few:
+
+  %w(date ezrss).each { |lib| require lib }
+  shows = Ezrss.search 'how i met your mom'
+  recent_drama = -> show { show.title =~ /lulz-Gr0uP/ &&
+                           show.description =~ /so much drama/ &&
+                           show.pubDate.to_date > Date.parse('2010-12-01') }
+  shows.pick &recent_drama
+
+You can build, and chain, quite as many filters as you like:
+
+  # Provided recent_shows and display_show are procs...
+  Ezrss.search(['The strange door', 'Dr What'], exact: true)
+     .where(title: /HUBERHDTV/)
+     .pick(&recent_shows)
+     .each(&display_show)
+
+And... I think we're done here.
+
+Bugs?
+-----
+
+Sure, I could write tests to squash a few.
+
+A few notes...
+--------------
+
+Please, do not use this to do über-vilain stuff.
+Thanks for reading this far. ^^
